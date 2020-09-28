@@ -1,16 +1,15 @@
-
 import os
 import tweepy
 import openpyxl
 import json
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-output_xlsx_path = base_dir + '/result.xlsx'
-
-consumer_key = ""
-consumer_secret = ""
-access_token = ""
-access_token_secret = ""
+output_xlsx_path = base_dir + '/output/result.xlsx'
+secrets = json.loads(open(path + 'secrets.json').read())
+consumer_key = ecrets['api_key']
+consumer_secret = secrets['api_secret_key']
+access_token = secrets['access_token']
+access_token_secret = secrets['access_token_secret']
 
 auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
 auth.set_access_token(access_token, access_token_secret)

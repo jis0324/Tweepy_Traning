@@ -2,11 +2,11 @@ import os
 import tweepy
 import csv
 import json
-import traceback
 import time
+import traceback
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-output_csv_path = base_dir + '/output/result.csv'
+output_json_path = base_dir + '/output/result.json'
 secrets = json.loads(open(path + 'secrets.json').read())
 consumer_key = ecrets['api_key']
 consumer_secret = secrets['api_secret_key']
@@ -34,14 +34,49 @@ class Profile:
       print("----- Not Fount userlists.txt File -----")
 
    # insert profile to csv
-  def insert_to_csv(self, profile_dict):
-    file_exist = os.path.isfile(output_csv_path)
-    with open(output_csv_path, "a", newline="") as f:
-      fieldnames = ["whose_follower", "user_id", "screen_name", "name", "location", "description", "url", "protected", "followers_count", "friends_count", "listed_count", "statuses_count", "favourites_count", "account_created_at", "verified", "profile_url", "profile_expanded_url", "account_lang", "profile_banner_url", "profile_background_url", "profile_image_url"]
-      writer = csv.DictWriter(f, fieldnames=fieldnames)
-      if not file_exist:
-        writer.writeheader()
-      writer.writerow(profile_dict)
+  def insert_to_json(self, profile_dict):
+    print(profile_dict)
+    with open(output_json_path, "a") as f:
+      f.write(json.dumps(profile_dict))
+
+  # get follower data
+  def get_follower_data(self, follower_id):
+    try:
+      follower = api.get_user(follower_id)
+      follower_dict = dict()
+      follower_dict["user_id"] = follower.id_str
+      follower_dict["status_id"] = ""
+      follower_dict["created_at"] = str(follower.created_at)
+      follower_dict["screen_name"] = follower.screen_name
+      follower_dict["name"] = follower.name
+      follower_dict["location"] = follower.location
+      follower_dict["description"] = follower.description
+      follower_dict["url"] = follower.url
+      follower_dict["protected"] = follower.protected
+      follower_dict["followers_count"] = follower.followers_count
+      follower_dict["friends_count"] = follower.followers_count
+      follower_dict["listed_count"] = follower.listed_count
+      follower_dict["statuses_count"] = follower.statuses_count
+      follower_dict["favourites_count"] = follower.favourites_count
+      follower_dict["account_created_at"] = str(follower.created_at)
+      follower_dict["verified"] = follower.verified
+      follower_dict["profile_url"] = ""
+      follower_dict["profile_expanded_url"] = ""
+      if "url" in follower.entities:
+        if "urls" in follower.entities["url"] and follower.entities["url"]["urls"]:
+          if "url" in follower.entities["url"]["urls"][0]:
+            follower_dict["profile_url"] = follower.entities["url"]["urls"][0]["url"]
+          if "expanded_url" in follower.entities["url"]["urls"][0]:
+            follower_dict["profile_expanded_url"] = follower.entities["url"]["urls"][0]["expanded_url"]
+
+      follower_dict["account_lang"] = follower.lang
+      follower_dict["profile_banner_url"] = follower.profile_banner_url
+      follower_dict["profile_background_url"] = follower.profile_background_image_url
+      follower_dict["profile_image_url"] = follower.profile_image_url
+
+      return follower_dict
+    except:
+      return None
 
   # get profile of user
   def get_user_profile(self, username):
@@ -49,8 +84,9 @@ class Profile:
       user = api.get_user(username)
 
       profile_dict = dict()
-      profile_dict["whose_follower"] = username
       profile_dict["user_id"] = user.id_str
+      profile_dict["status_id"] = ""
+      profile_dict["created_at"] = str(user.created_at)
       profile_dict["screen_name"] = user.screen_name
       profile_dict["name"] = user.name
       profile_dict["location"] = user.location
@@ -78,6 +114,22 @@ class Profile:
       profile_dict["profile_background_url"] = user.profile_background_image_url
       profile_dict["profile_image_url"] = user.profile_image_url
 
+      profile_dict["followers"] = dict()
+      follower_ids = []
+      for page in tweepy.Cursor(api.followers_ids, screen_name=username).pages():
+        follower_ids.extend(page)
+        # time.sleep(60)
+
+      for index, follower_id in enumerate(follower_ids):
+        try:
+          print("{}th Follower / Total {} Followers Of {}".format(index + 1, profile_dict["followers_count"], username))
+          if str(follower_id) not in profile_dict["followers"]:
+            follower_data = self.get_follower_data(follower_id)
+            profile_dict["followers"][str(follower_id)] = follower_data
+        except:
+          print(traceback.print_exc())
+          continue
+
       print(json.dumps(profile_dict, indent=2))
       return profile_dict
     except:
@@ -87,15 +139,12 @@ class Profile:
   # main
   def main(self):
     if self.users_list:
-      # iterate user list
       for index, username in enumerate(self.users_list):
         try:
-          print("{}th User / Total {} Users : {}".format(index + 1, len(self.users_list), username))
-          # get user data
+          print("{}th User / Total {} Users : {}".format(index+1, len(self.users_list), username))
           profile_dict = self.get_user_profile(username)
           if profile_dict:
-            # insert user data to csv
-            self.insert_to_csv(profile_dict)
+            self.insert_to_json(profile_dict)
         except:
           print(traceback.print_exc())
           continue
@@ -106,8 +155,8 @@ class Profile:
 
 if __name__ == '__main__':
   # delete output csv
-  if os.path.isfile(output_csv_path):
-    os.remove(output_csv_path)
+  if os.path.isfile(output_json_path):
+    os.remove(output_json_path)
 
   profile = Profile()
   profile.main()
