@@ -13,10 +13,11 @@ consumer_secret = secrets['api_secret_key']
 access_token = secrets['access_token']
 access_token_secret = secrets['access_token_secret']
 
-auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_token_secret)
+# auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+# auth.set_access_token(access_token, access_token_secret)
+auth = tweepy.AppAuthHandler(consumer_key, consumer_secret)
 
-api = tweepy.API(auth)
+api = tweepy.API(auth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
 
 class Followers:
   # init
@@ -47,6 +48,9 @@ class Followers:
 
   # get profile of user
   def get_followers_data(self, username):
+  # try with user_lookup
+
+  # try with itmes
     # try:
     #   print("Finding followers of {}...".format(username))
     #   users = tweepy.Cursor(api.followers, screen_name=username).items()
@@ -110,23 +114,26 @@ class Followers:
 
     # except:
     #   print(traceback.print_exc())
-    
+
+  # try with pages  
     try:
       print("Finding followers of {}...".format(username))
 
-      pages = tweepy.Cursor(api.followers, screen_name=username).pages()
+      pages = tweepy.Cursor(api.followers, screen_name=username, count=200).pages()
 
       i = 0
       while True:
         try:
           page = next(pages)
-          time.sleep(4)
+          time.sleep(1)
         except tweepy.TweepError: #taking extra care of the "rate limit exceeded"
-          print("sleeping for 15mins...")
+          print("manually, Sleeping for 15mins...")
           time.sleep(60*15) 
           page = next(pages)
         except StopIteration:
           break
+        except:
+          continue
 
         for user in page:
           i += 1
