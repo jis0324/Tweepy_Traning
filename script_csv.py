@@ -125,7 +125,7 @@ class Followers:
       while True:
         try:
           page = next(pages)
-          time.sleep(1)
+          time.sleep(4)
         except tweepy.TweepError: #taking extra care of the "rate limit exceeded"
           print("manually, Sleeping for 15mins...")
           time.sleep(60*15) 
@@ -178,7 +178,7 @@ class Followers:
             # insert follower data to csv
             self.insert_to_csv(follower_dict)
     
-      print("----- Total {} followers found -----".format(i))
+      print("----- Total {} followers found From {} -----".format(i, username))
       print("-----------------------------------")
 
     except:
@@ -215,9 +215,14 @@ class Followers:
       return
 
 if __name__ == '__main__':
-  # delete output csv
-  if os.path.isfile(output_csv_path):
-    os.remove(output_csv_path)
+  
+  directory_output = base_dir + "/output/"
+  if os.path.exists(directory_output):
+    # delete output csv
+    if os.path.isfile(output_csv_path):
+      os.remove(output_csv_path)
+  else:
+    os.makedirs(directory_output)
 
   follower_profile = Followers()
   follower_profile.main()
